@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,18 +22,26 @@ namespace DurableBuildOFunctionApp
         {
             var outputs = new List<string>();
 
-            DevOpsBuildContext buildContext = new DevOpsBuildContext
+            // Get the main setup ready
+            var setupTasks = new List<Task<DevOpsBuild>>();
+            foreach (var setupContext in ContextProvider.GetSetupBuildContexts())
             {
-                BuildTaskName = "Initial Test",
-                Organization = "azfunc",
-                Project = "Azure Functions",
-                DefinitionId = 20
-            };
+                Task<DevOpsBuild> setupBuild = context.CallSubOrchestratorAsync<DevOpsBuild>("BuildManager_OrchestrateBuild", setupContext);
+                setupTasks.Add(setupBuild);
+            }
+            var setupBuilds = await Task.WhenAll(setupTasks);
+            outputs.AddRange(setupBuilds.Select(b => b.Url));
 
-            DevOpsBuild bb = await context.CallSubOrchestratorAsync<DevOpsBuild>("BuildManager_OrchestrateBuild", buildContext);
-            //outputs.Add((await context.CallActivityAsync<DevOpsBuild>("BuildManager_QueueBuild", buildContext)).Url);
-            //outputs.Add((await context.CallActivityAsync<DevOpsBuild>("BuildManager_QueueBuild", buildContext)).Url);
-            outputs.Add(bb.Url);
+            // Run the worker tasks in parallel
+            var workerTasks = new List<Task<DevOpsBuild>>();
+            foreach (var workerContext in ContextProvider.GetWorkerBuildContexts())
+            {
+                Task<DevOpsBuild> workerBuild = context.CallSubOrchestratorAsync<DevOpsBuild>("BuildManager_OrchestrateBuild", workerContext);
+                workerTasks.Add(workerBuild);
+            }
+            var workerBuilds = await Task.WhenAll(workerTasks);
+            outputs.AddRange(workerBuilds.Select(b => b.Url));
+
             return outputs;
         }
 
