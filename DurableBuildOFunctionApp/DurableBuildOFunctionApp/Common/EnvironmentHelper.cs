@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,8 +18,12 @@ namespace DurableBuildOFunctionApp.Common
             return GetEnvironment(Constants.EnvVars.DevOpsOrg);
         }
 
-        public static string GetProject()
+        public static string GetProject(string worker = null)
         {
+            if (!string.IsNullOrEmpty(worker) && worker == "python")
+            {
+                return GetEnvironment(Constants.EnvVars.DevOpsProjectPython);
+            }
             return GetEnvironment(Constants.EnvVars.DevOpsProject);
         }
 
@@ -34,15 +39,48 @@ namespace DurableBuildOFunctionApp.Common
             throw new FormatException($"Definition ID {prefix}{Constants.EnvVars.DefinitionIDSuffix} must be an integer.");
         }
 
+        public static bool ShouldUploadArtifact()
+        {
+            var shouldUpload = GetEnvironment(Constants.EnvVars.UploadArtifact);
+            if (string.IsNullOrEmpty(shouldUpload))
+            {
+                return false;
+            }
+            return shouldUpload.Equals("True", StringComparison.OrdinalIgnoreCase)
+                || shouldUpload.Equals("1", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string GetStorageConnectionString()
+        {
+            return GetEnvironment(Constants.EnvVars.UploadStorageConString);
+        }
+
+        public static string GetHostEnvironment()
+        {
+            return GetEnvironment(Constants.EnvVars.HostEnvironment, nullable: true)
+                ?? "dev";
+        }
+
+        public static string GetArtifactName(string prefix, string commonPrefix = null)
+        {
+            var prefixToUse = prefix ?? commonPrefix;
+            if (string.IsNullOrEmpty(prefixToUse))
+            {
+                throw new ArgumentNullException($"Both {nameof(prefix)} and {nameof(commonPrefix)} cannot be null.");
+            }
+            return GetEnvironment($"{prefixToUse}{Constants.EnvVars.ArtifactNameSuffix}");
+        }
+
         public static IDictionary<string, string> GetPrefixVariables(string prefix)
         {
             IDictionary<string, string> variables = new Dictionary<string, string>();
-            foreach (KeyValuePair<string, string> kp in variables)
+            foreach (DictionaryEntry env in Environment.GetEnvironmentVariables())
             {
                 // If settings start with this, we strip the prefix out and record the value
-                if (kp.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                if (env.Key.ToString()?.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                    ?? false)
                 {
-                    variables[kp.Key.Substring(prefix.Length)] = kp.Value;
+                    variables[env.Key.ToString().Substring(prefix.Length)] = env.Value.ToString();
                 }
             }
 

@@ -23,14 +23,14 @@ namespace DurableBuildOFunctionApp
             var outputs = new List<string>();
 
             // Get the main setup ready
-            var setupTasks = new List<Task<DevOpsBuild>>();
-            foreach (var setupContext in ContextProvider.GetSetupBuildContexts())
-            {
-                Task<DevOpsBuild> setupBuild = context.CallSubOrchestratorAsync<DevOpsBuild>("BuildManager_OrchestrateBuild", setupContext);
-                setupTasks.Add(setupBuild);
-            }
-            var setupBuilds = await Task.WhenAll(setupTasks);
-            outputs.AddRange(setupBuilds.Select(b => b.Url));
+            //var setupTasks = new List<Task<DevOpsBuild>>();
+            //foreach (var setupContext in ContextProvider.GetSetupBuildContexts())
+            //{
+            //    Task<DevOpsBuild> setupBuild = context.CallSubOrchestratorAsync<DevOpsBuild>("BuildManager_OrchestrateBuild", setupContext);
+            //    setupTasks.Add(setupBuild);
+            //}
+            //var setupBuilds = await Task.WhenAll(setupTasks);
+            //outputs.AddRange(setupBuilds.Select(b => b.Url));
 
             // Run the worker tasks in parallel
             var workerTasks = new List<Task<DevOpsBuild>>();
@@ -58,11 +58,27 @@ namespace DurableBuildOFunctionApp
                 build = await context.CallActivityAsync<DevOpsBuild>("BuildManager_GetBuildStatus", build.Url);
                 if (build.Status == BuildStatus.completed)
                 {
+                    // For worker builds we need to get the artifacts and upload it
+                    if (Constants.LanguageWorkersForBuild.Contains(buildContext.Agent)
+                        && EnvironmentHelper.ShouldUploadArtifact())
+                    {
+                        var artifactContext = ContextProvider.GetWorkerArtifactContext(build.Id, buildContext.Agent);
+                        var artifact = await context.CallActivityAsync<DevOpsArtifact>("BuildManager_GetBuildArtifact", artifactContext);
+
+                        // TODO: change the platform here
+                        var uploadContext = ContextProvider.GetWorkerArtifactUploadContext(artifact, "noplat", buildContext.Agent);
+                        await context.CallActivityAsync("BuildManager_UploadToStorage", uploadContext);
+                    }
                     return build;
                 }
+
+                // Orchestration sleeps until this time.
+                var nextCheck = context.CurrentUtcDateTime + pollingInterval;
+                await context.CreateTimer(nextCheck, CancellationToken.None);
             }
 
             // TODO: Need to verify that this is ok
+            // and probably throw a "failure" log
             return build;
         }
 
@@ -71,7 +87,7 @@ namespace DurableBuildOFunctionApp
         {
             log.LogInformation($"Kicking off a build for {buildContext.BuildTaskName}...");
             string authToken = EnvironmentHelper.GetAuthToken();
-            DevOpsBuild build = DevOpsHelper.QueueDevOpsBuild(buildContext, authToken).Result;
+            DevOpsBuild build = DevOpsHelper.QueueDevOpsBuild(buildContext, authToken, log).Result;
             return build;
         }
 
@@ -79,8 +95,23 @@ namespace DurableBuildOFunctionApp
         public static DevOpsBuild PollBuild([ActivityTrigger] string buildUrl, ILogger log)
         {
             log.LogInformation($"Polling the build URL: {buildUrl}...");
-            DevOpsBuild build = DevOpsHelper.GetBuildStatus(buildUrl).Result;
+            DevOpsBuild build = DevOpsHelper.GetBuildStatus(buildUrl, log).Result;
             return build;
+        }
+
+        [FunctionName("BuildManager_GetBuildArtifact")]
+        public static DevOpsArtifact GetBuildArtifact([ActivityTrigger] DevOpsArtifactContext artifactContext, ILogger log)
+        {
+            log.LogInformation($"Getting the build artifact info for {artifactContext.Agent}...");
+            DevOpsArtifact artifact = DevOpsHelper.GetBuildArtifact(artifactContext, log).Result;
+            return artifact;
+        }
+
+        [FunctionName("BuildManager_UploadToStorage")]
+        public static void UploadToStorage([ActivityTrigger] BlobUploadContext uploadContext, ILogger log)
+        {
+            log.LogInformation($"Uploading the test artifacts for worker {uploadContext.Worker}...");
+            StorageHelper.UploadArtifactToStorage(uploadContext).Wait();
         }
 
         [FunctionName("BuildManager_HttpStart")]

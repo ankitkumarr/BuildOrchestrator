@@ -12,6 +12,8 @@ namespace DurableBuildOFunctionApp.Contexts
 
         public string Project { get; set; }
 
+        public string Agent { get; set; }
+
         public int DefinitionId { get; set; }
 
         public IDictionary<string, string> Parameters { get; set; }

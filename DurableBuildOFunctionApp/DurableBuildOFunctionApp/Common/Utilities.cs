@@ -9,19 +9,19 @@ namespace DurableBuildOFunctionApp.Common
 {
     class Utilities
     {
-        public static HttpClient GetHttpClient(Uri url, string bearerToken = null, TimeSpan? timeout = null)
+        public static HttpClient GetHttpClient(Uri url, string bearerToken = null, HttpMessageHandler handler = null, TimeSpan? timeout = null)
         {
-            var handler = new HttpClientHandler();
-            var client = new HttpClient(handler)
+            var client = new HttpClient(handler ?? new HttpClientHandler())
             {
                 BaseAddress = url,
                 Timeout = timeout ?? Timeout.InfiniteTimeSpan
             };
-            client.DefaultRequestHeaders.Add("User-Agent", "functions-build-orchestrator/v0.1");
+            // client.DefaultRequestHeaders.Add("User-Agent", "functions-build-orchestrator/v0.1");
             if (bearerToken != null)
             {
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", bearerToken);
             }
+            client.DefaultRequestHeaders.Add("Accept", "*/*");
             return client;
         }
     }
