@@ -37,7 +37,7 @@ namespace DurableBuildOFunctionApp.Common
         public static readonly IReadOnlyDictionary<string, string> WorkerConfigToPrefix = new Dictionary<string, string>
         {
             { "node", "DEVOPS_NODE_" },
-            { "java", "DEVOPS_JAVA_" },
+            //{ "java", "DEVOPS_JAVA_" },
             //{ "python", "DEVOPS_PYTHON_" },
             //{ "dotnet", "DEVOPS_DOTNET_" }
         };

@@ -21,7 +21,7 @@ namespace DurableBuildOFunctionApp.Common
             public static string GetArtifactsUrl(string organization, string project, int buildId, string artifactName)
             {
                 return $"{Constants.DevOps.EndPoint}/{organization}/{project}/_apis/build/builds/" +
-                    $"{buildId}/artifacts/{artifactName}?api-version={Constants.DevOps.ArtifactsApiVersion}";
+                    $"{buildId}/artifacts?artifactName={artifactName}&api-version={Constants.DevOps.ArtifactsApiVersion}";
             }
         }
 
