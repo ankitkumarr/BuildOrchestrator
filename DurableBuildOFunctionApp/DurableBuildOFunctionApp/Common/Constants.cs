@@ -39,10 +39,10 @@ namespace DurableBuildOFunctionApp.Common
         // Setting format will be {Prefix}{Type}{Setting}
         public static readonly IReadOnlyDictionary<string, string> WorkerConfigToPrefix = new Dictionary<string, string>
         {
-            // { "node", "DEVOPS_NODE_" },
+            { "node", "DEVOPS_NODE_" },
             { "java", "DEVOPS_JAVA_" },
-            //{ "python", "DEVOPS_PYTHON_" },
-            //{ "dotnet", "DEVOPS_DOTNET_" }
+            { "python", "DEVOPS_PYTHON_" },
+            { "powershell", "DEVOPS_POWERSHELL_" }
         };
 
         public static readonly IReadOnlyDictionary<string, string> PlatformConfigToPrefix = new Dictionary<string, string>

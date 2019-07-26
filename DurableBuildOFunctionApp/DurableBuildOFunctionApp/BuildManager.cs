@@ -33,14 +33,14 @@ namespace DurableBuildOFunctionApp
             outputs.AddRange(workerCliBuilds.Select(b => b.Url));
 
             // Get the platform main setup ready
-            //var setupTasks = new List<Task<DevOpsBuild>>();
-            //foreach (var setupContext in ContextProvider.GetSetupBuildContexts())
-            //{
-            //    Task<DevOpsBuild> setupBuild = context.CallSubOrchestratorAsync<DevOpsBuild>("BuildManager_OrchestrateBuild", setupContext);
-            //    setupTasks.Add(setupBuild);
-            //}
-            //var setupBuilds = await Task.WhenAll(setupTasks);
-            //outputs.AddRange(setupBuilds.Select(b => b.Url));
+            var setupTasks = new List<Task<DevOpsBuild>>();
+            foreach (var setupContext in ContextProvider.GetSetupBuildContexts())
+            {
+                Task<DevOpsBuild> setupBuild = context.CallSubOrchestratorAsync<DevOpsBuild>("BuildManager_OrchestrateBuild", setupContext);
+                setupTasks.Add(setupBuild);
+            }
+            var setupBuilds = await Task.WhenAll(setupTasks);
+            outputs.AddRange(setupBuilds.Select(b => b.Url));
 
             // Run the worker Site tasks in parallel
             var workerSiteTasks = new List<Task<DevOpsBuild>>();
