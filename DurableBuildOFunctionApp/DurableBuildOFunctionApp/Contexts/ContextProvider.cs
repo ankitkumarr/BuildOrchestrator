@@ -21,29 +21,63 @@ namespace DurableBuildOFunctionApp.Contexts
             return buildContexts;
         }
 
-        public static IList<DevOpsBuildContext> GetWorkerBuildContexts()
+        public static IList<DevOpsBuildContext> GetWorkerCliBuildContexts()
         {
             IList<DevOpsBuildContext> buildContexts = new List<DevOpsBuildContext>();
 
             foreach (var worker in Constants.LanguageWorkersForBuild)
             {
-                buildContexts.Add(WorkerBuildContext(worker));
+                buildContexts.Add(WorkerCliBuildContext(worker));
             }
 
             return buildContexts;
         }
 
-        private static DevOpsBuildContext WorkerBuildContext(string worker)
+        public static IList<DevOpsBuildContext> GetWorkerSiteBuildContexts()
         {
-            var prefix = Constants.WorkerConfigToPrefix[worker];
+            IList<DevOpsBuildContext> buildContexts = new List<DevOpsBuildContext>();
+
+            foreach (var worker in Constants.LanguageWorkersForBuild)
+            {
+                buildContexts.Add(WorkerSiteBuildContext(worker));
+            }
+
+            return buildContexts;
+        }
+
+        private static DevOpsBuildContext WorkerCliBuildContext(string worker)
+        {
+            var prefix = $"{Constants.WorkerConfigToPrefix[worker]}{Constants.EnvVars.WorkerCliTypeVar}";
             var workerParameters = EnvironmentHelper.GetPrefixVariables(prefix);
             var parameters = EnvironmentHelper.GetPrefixVariables(Constants.EnvVars.WorkerCommonPrefix);
             workerParameters.ToList().ForEach(x => parameters[x.Key] = x.Value);
 
             var buildContext = new DevOpsBuildContext
             {
-                BuildTaskName = $"Running build for {worker}",
+                BuildTaskName = $"Running Cli build for {worker}",
                 Agent = worker,
+                BuildType = BuildType.WorkerCli,
+                Organization = EnvironmentHelper.GetOrganization(),
+                Project = EnvironmentHelper.GetProject(worker),
+                DefinitionId = EnvironmentHelper.GetDefinitionId(prefix),
+                Parameters = parameters
+            };
+
+            return buildContext;
+        }
+
+        private static DevOpsBuildContext WorkerSiteBuildContext(string worker)
+        {
+            var prefix = $"{Constants.WorkerConfigToPrefix[worker]}{Constants.EnvVars.WorkerSiteTypeVar}";
+            var workerParameters = EnvironmentHelper.GetPrefixVariables(prefix);
+            var parameters = EnvironmentHelper.GetPrefixVariables(Constants.EnvVars.WorkerCommonPrefix);
+            workerParameters.ToList().ForEach(x => parameters[x.Key] = x.Value);
+
+            var buildContext = new DevOpsBuildContext
+            {
+                BuildTaskName = $"Running Site build for {worker}",
+                Agent = worker,
+                BuildType = BuildType.WorkerSite,
                 Organization = EnvironmentHelper.GetOrganization(),
                 Project = EnvironmentHelper.GetProject(worker),
                 DefinitionId = EnvironmentHelper.GetDefinitionId(prefix),
@@ -63,6 +97,7 @@ namespace DurableBuildOFunctionApp.Contexts
             {
                 BuildTaskName = $"Setup for {platform}",
                 Agent = platform,
+                BuildType = BuildType.SiteSetup,
                 Organization = EnvironmentHelper.GetOrganization(),
                 Project = EnvironmentHelper.GetProject(),
                 DefinitionId = EnvironmentHelper.GetDefinitionId(prefix),

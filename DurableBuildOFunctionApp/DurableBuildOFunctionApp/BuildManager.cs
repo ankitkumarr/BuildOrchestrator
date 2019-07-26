@@ -22,7 +22,17 @@ namespace DurableBuildOFunctionApp
         {
             var outputs = new List<string>();
 
-            // Get the main setup ready
+            // Run the worker CLI tasks in parallel
+            var workerCliTasks = new List<Task<DevOpsBuild>>();
+            foreach (var workerCliContext in ContextProvider.GetWorkerCliBuildContexts())
+            {
+                Task<DevOpsBuild> workerCliBuild = context.CallSubOrchestratorAsync<DevOpsBuild>("BuildManager_OrchestrateBuild", workerCliContext);
+                workerCliTasks.Add(workerCliBuild);
+            }
+            var workerCliBuilds = await Task.WhenAll(workerCliTasks);
+            outputs.AddRange(workerCliBuilds.Select(b => b.Url));
+
+            // Get the platform main setup ready
             //var setupTasks = new List<Task<DevOpsBuild>>();
             //foreach (var setupContext in ContextProvider.GetSetupBuildContexts())
             //{
@@ -32,15 +42,15 @@ namespace DurableBuildOFunctionApp
             //var setupBuilds = await Task.WhenAll(setupTasks);
             //outputs.AddRange(setupBuilds.Select(b => b.Url));
 
-            // Run the worker tasks in parallel
-            var workerTasks = new List<Task<DevOpsBuild>>();
-            foreach (var workerContext in ContextProvider.GetWorkerBuildContexts())
+            // Run the worker Site tasks in parallel
+            var workerSiteTasks = new List<Task<DevOpsBuild>>();
+            foreach (var workerSiteContext in ContextProvider.GetWorkerSiteBuildContexts())
             {
-                Task<DevOpsBuild> workerBuild = context.CallSubOrchestratorAsync<DevOpsBuild>("BuildManager_OrchestrateBuild", workerContext);
-                workerTasks.Add(workerBuild);
+                Task<DevOpsBuild> workerSiteBuild = context.CallSubOrchestratorAsync<DevOpsBuild>("BuildManager_OrchestrateBuild", workerSiteContext);
+                workerSiteTasks.Add(workerSiteBuild);
             }
-            var workerBuilds = await Task.WhenAll(workerTasks);
-            outputs.AddRange(workerBuilds.Select(b => b.Url));
+            var workerSiteBuilds = await Task.WhenAll(workerSiteTasks);
+            outputs.AddRange(workerSiteBuilds.Select(b => b.Url));
 
             return outputs;
         }
@@ -66,7 +76,9 @@ namespace DurableBuildOFunctionApp
                         var artifact = await context.CallActivityAsync<DevOpsArtifact>("BuildManager_GetBuildArtifact", artifactContext);
 
                         // TODO: change the platform here
-                        var uploadContext = ContextProvider.GetWorkerArtifactUploadContext(artifact, "noplat", buildContext.Agent);
+                        var uploadContext = ContextProvider.GetWorkerArtifactUploadContext(artifact, 
+                            $"noplat{buildContext.BuildType.ToString()}", buildContext.Agent);
+
                         await context.CallActivityAsync("BuildManager_UploadToStorage", uploadContext);
                     }
                     return build;

@@ -26,18 +26,21 @@ namespace DurableBuildOFunctionApp.Common
             public static readonly string UploadStorageConString = "UPLOAD_CONNECTION_STRING";
             public static readonly string UploadArtifact = "UPLOAD_ARTIFACT";
             public static readonly string WorkerCommonPrefix = "DEVOPS_WORKER_";
+            public static readonly string WorkerCliTypeVar = "CLI_";
+            public static readonly string WorkerSiteTypeVar = "SITE_";
         }
 
         public static class PollSettings
         {
             public const int pollingIntervalSecs = 15;
-            public const int expiryMinutes = 60;
+            public const int expiryMinutes = 100;
         }
 
+        // Setting format will be {Prefix}{Type}{Setting}
         public static readonly IReadOnlyDictionary<string, string> WorkerConfigToPrefix = new Dictionary<string, string>
         {
-            { "node", "DEVOPS_NODE_" },
-            //{ "java", "DEVOPS_JAVA_" },
+            // { "node", "DEVOPS_NODE_" },
+            { "java", "DEVOPS_JAVA_" },
             //{ "python", "DEVOPS_PYTHON_" },
             //{ "dotnet", "DEVOPS_DOTNET_" }
         };

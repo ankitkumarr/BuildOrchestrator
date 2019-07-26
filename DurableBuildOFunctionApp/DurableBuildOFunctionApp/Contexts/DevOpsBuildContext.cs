@@ -16,6 +16,16 @@ namespace DurableBuildOFunctionApp.Contexts
 
         public int DefinitionId { get; set; }
 
+        public BuildType BuildType { get; set; }
+
         public IDictionary<string, string> Parameters { get; set; }
+    }
+
+    public enum BuildType
+    {
+        Other = 0,
+        WorkerCli,
+        WorkerSite,
+        SiteSetup
     }
 }
