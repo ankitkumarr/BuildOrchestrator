@@ -45,8 +45,9 @@ namespace DurableBuildOFunctionApp.Common
             catch (Exception)
             {
                 // Sometimes storage client's exceptions are unhelpful
-                throw new Exception($"Error creating a Blob container reference. " +
+                Console.WriteLine($"Error creating a Blob container reference. " +
                     $"Please make sure your connection string in {Constants.EnvVars.UploadStorageConString} is valid");
+                throw;
             }
             var blob = blobContainer.GetBlockBlobReference(blobName);
             await blob.UploadFromStreamAsync(package);

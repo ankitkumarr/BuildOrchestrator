@@ -77,7 +77,7 @@ namespace DurableBuildOFunctionApp
 
                         // TODO: change the platform here
                         var uploadContext = ContextProvider.GetWorkerArtifactUploadContext(artifact, 
-                            $"noplat{buildContext.BuildType.ToString()}", buildContext.Agent);
+                            $"{Utilities.BuildTypeToCon(buildContext.BuildType)}", buildContext.Agent);
 
                         await context.CallActivityAsync("BuildManager_UploadToStorage", uploadContext);
                     }

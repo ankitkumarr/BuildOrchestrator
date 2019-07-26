@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DurableBuildOFunctionApp.Contexts;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -23,6 +24,21 @@ namespace DurableBuildOFunctionApp.Common
             }
             client.DefaultRequestHeaders.Add("Accept", "*/*");
             return client;
+        }
+
+        public static string BuildTypeToCon(BuildType buildtype)
+        {
+            switch(buildtype)
+            {
+                case BuildType.WorkerSite:
+                    return "site";
+                case BuildType.WorkerCli:
+                    return "cli";
+                case BuildType.SiteSetup:
+                    return "set";
+                default:
+                    return "co";
+            }
         }
     }
 }
