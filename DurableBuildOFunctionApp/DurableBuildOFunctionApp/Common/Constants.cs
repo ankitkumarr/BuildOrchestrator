@@ -43,6 +43,7 @@ namespace DurableBuildOFunctionApp.Common
             { "java", "DEVOPS_JAVA_" },
             { "python", "DEVOPS_PYTHON_" },
             { "powershell", "DEVOPS_POWERSHELL_" }
+            // { "dotnet", "DEVOPS_DOTNET_" },
         };
 
         public static readonly IReadOnlyDictionary<string, string> PlatformConfigToPrefix = new Dictionary<string, string>

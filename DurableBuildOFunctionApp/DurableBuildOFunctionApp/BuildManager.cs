@@ -75,11 +75,15 @@ namespace DurableBuildOFunctionApp
                         var artifactContext = ContextProvider.GetWorkerArtifactContext(build.Id, buildContext.Agent);
                         var artifact = await context.CallActivityAsync<DevOpsArtifact>("BuildManager_GetBuildArtifact", artifactContext);
 
-                        // TODO: change the platform here
-                        var uploadContext = ContextProvider.GetWorkerArtifactUploadContext(artifact, 
-                            $"{Utilities.BuildTypeToCon(buildContext.BuildType)}", buildContext.Agent);
+                        if (artifact != null)
+                        {
+                            // TODO: change the platform here
+                            var uploadContext = ContextProvider.GetWorkerArtifactUploadContext(artifact,
+                                $"{Utilities.BuildTypeToCon(buildContext.BuildType)}", buildContext.Agent);
 
-                        await context.CallActivityAsync("BuildManager_UploadToStorage", uploadContext);
+                            await context.CallActivityAsync("BuildManager_UploadToStorage", uploadContext);
+                        }
+                        // TODO: if it is null, a special failed tests file should be dropped at the storage account
                     }
                     return build;
                 }
@@ -115,8 +119,16 @@ namespace DurableBuildOFunctionApp
         public static DevOpsArtifact GetBuildArtifact([ActivityTrigger] DevOpsArtifactContext artifactContext, ILogger log)
         {
             log.LogInformation($"Getting the build artifact info for {artifactContext.Agent}...");
-            DevOpsArtifact artifact = DevOpsHelper.GetBuildArtifact(artifactContext, log).Result;
-            return artifact;
+            try
+            {
+                DevOpsArtifact artifact = DevOpsHelper.GetBuildArtifact(artifactContext, log).Result;
+                return artifact;
+            }
+            catch (Exception)
+            {
+                // TODO: create a failed test series artifact and return it
+                return null;
+            }
         }
 
         [FunctionName("BuildManager_UploadToStorage")]
@@ -128,7 +140,7 @@ namespace DurableBuildOFunctionApp
 
         [FunctionName("BuildManager_HttpStart")]
         public static async Task<HttpResponseMessage> HttpStart(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")]HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post")]HttpRequestMessage req,
             [OrchestrationClient]DurableOrchestrationClient starter,
             ILogger log)
         {

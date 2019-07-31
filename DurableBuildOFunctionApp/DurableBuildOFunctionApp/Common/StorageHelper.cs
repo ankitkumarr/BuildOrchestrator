@@ -16,7 +16,7 @@ namespace DurableBuildOFunctionApp.Common
         public async static Task UploadArtifactToStorage(BlobUploadContext uploadContext)
         {
             string containerName = $"{uploadContext.Worker}-{uploadContext.Platform}-{uploadContext.Environment}";
-            string blobName = $"results-{Guid.NewGuid().ToString()}";
+            string blobName = $"results-{Guid.NewGuid().ToString()}.zip";
 
             string artifactUrl = uploadContext?.Artifact?.Resource?.DownloadUrl
                 ?? throw new ArgumentNullException("Could not retrieve the download Url from the context.");
